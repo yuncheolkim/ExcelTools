@@ -181,6 +181,7 @@ func main() {
 	flag.StringVar(&inDir, "inDir", "", "excel所在的目录")
 	flag.StringVar(&outDir, "outDir", "", "json输出目录")
 	flag.IntVar(&t, "t", 1, "工具类型，1:excel导出，2：中文字符整理")
+
 	flag.Parse()
 	JsonPretty = pretty
 
