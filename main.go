@@ -77,9 +77,11 @@ func makeSheet(sheet *xlsx.Sheet) ExcelSheetData {
 	for i := 0; i < maxCol; i++ {
 		ft := fieldType.GetCell(i)
 		c := field.GetCell(i)
+		f := c.String()
+		t := ft.String()
 		v := FieldType{
-			Field: c.Value,
-			Type:  ft.Value,
+			Field: f,
+			Type:  t,
 		}
 		m[i] = v
 	}
@@ -115,7 +117,7 @@ func makeRow(rowNum int, row *xlsx.Row, e error, m map[int]FieldType) ExcelRowDa
 		var cell interface{}
 		var e error
 		getCell := row.GetCell(i)
-		if getCell.String() == "" {
+		if strings.TrimSpace(getCell.String()) == "" {
 			continue
 		}
 		switch m[i].Type {
@@ -173,11 +175,23 @@ func main() {
 	inDir := "/t1"
 	outDir := "/t2"
 	t := 1
-	println(outDir)
+	println(`
+********************************* 说明 ***********************************
+ 第一行注释
+ 第二行变量名
+ 第三行类型,支持类型为:int,long,float,string,json
+ 第一列必须为id列
+ 第一列为 # 字符则跳过这行
+ 文件,sheet名字test,temp开头则跳过读取
+ format=f,不格式化,去掉这个选项则格式化
+
+命令样例: C:\tools\excel.exe -format=f -inDir D:\Config -outDir D:\Data\
+*************************************************************************
+`)
 
 	var pretty bool
 
-	flag.BoolVar(&pretty, "format", true, "是否格式化json")
+	flag.BoolVar(&pretty, "format", true, "是否格式化json,使用:-format=f")
 	flag.StringVar(&inDir, "inDir", "", "excel所在的目录")
 	flag.StringVar(&outDir, "outDir", "", "json输出目录")
 	flag.IntVar(&t, "t", 1, "工具类型，1:excel导出，2：中文字符整理")
@@ -195,6 +209,7 @@ func main() {
 
 			name := v.Name()
 			if filepath.Ext(name) != ".xlsx" || strings.HasPrefix(name, "~$") || strings.HasPrefix(name, "test") || strings.HasPrefix(name, "temp") {
+				println("跳过文件,因为文件名开头为test,或者temp,或者不是xlsx文件", name)
 				continue
 			}
 
@@ -202,7 +217,9 @@ func main() {
 
 			result := ReadXlsx(filepath.Clean(filepath.Join(inDir, name)))
 			for _, v := range result.Sheets {
-				if strings.HasPrefix(v.Name, "test") {
+				if strings.HasPrefix(v.Name, "test") || strings.HasPrefix(v.Name, "temp") {
+					println("跳过Sheet,因为开头为test,或者temp", v.Name)
+
 					continue
 				}
 				name := result.Name + "_" + v.Name
